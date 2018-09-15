@@ -10,4 +10,6 @@ void Utility_intToHex(char* dst, const void* ptr, int count);
 
 uint16_t Utility_uint16_beToLe(const void * ptr);
 
+int Utility_aToInt(char * ptr);
+
 #endif // __UTILITYFN_H__

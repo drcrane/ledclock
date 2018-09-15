@@ -10,10 +10,17 @@
 
 const char digits[] = { 0xBF, 0x06, 0x5B, 0x4F, 0xE6, 0xED, 0xFD, 0x07, 0xFF, 0xEF, 0x99, 0xE3 };
 
-void printtime() {
+void outputdigit(void * ptr) {
 	char dst[8];
-	Utility_intToHex(dst, &rtcctx.seconds, 2);
+	Utility_intToHex(dst, ptr, 1);
 	hwuart_sendstr(dst);
+}
+
+void printtime() {
+	outputdigit(&rtcctx.hours);
+	outputdigit(&rtcctx.minutes);
+	outputdigit(&rtcctx.seconds);
+	hwuart_sendstr("\r\n");
 	//hwuart_sendstr("lwl");
 }
 
@@ -40,8 +47,8 @@ void Timer1_A1(void) {
 		switch (digit_idx) {
 		case 0:
 		{
-			if (rtcctx.minutes != 0) {
-				digit_bitmap_idx = rtcctx.minutes / 10;
+			if (rtcctx.hours != 0) {
+				digit_bitmap_idx = rtcctx.hours / 10;
 			} else {
 				digit_bitmap_idx = 0;
 			}
@@ -51,8 +58,8 @@ void Timer1_A1(void) {
 		break;
 		case 1:
 		{
-			if (rtcctx.minutes != 0) {
-				digit_bitmap_idx = rtcctx.minutes % 10;
+			if (rtcctx.hours != 0) {
+				digit_bitmap_idx = rtcctx.hours % 10;
 			} else {
 				digit_bitmap_idx = 0;
 			}
@@ -62,8 +69,8 @@ void Timer1_A1(void) {
 		break;
 		case 2:
 		{
-			if (rtcctx.seconds != 0) {
-				digit_bitmap_idx = (rtcctx.seconds / 10) % 10;
+			if (rtcctx.minutes != 0) {
+				digit_bitmap_idx = (rtcctx.minutes / 10) % 10;
 			} else {
 				digit_bitmap_idx = 0;
 			}
@@ -73,7 +80,7 @@ void Timer1_A1(void) {
 		break;
 		default:
 		{
-			digit_bitmap_idx = rtcctx.seconds % 10;
+			digit_bitmap_idx = rtcctx.minutes % 10;
 			digit_idx = 0;
 			p2val = 0x08;
 		}
@@ -117,6 +124,8 @@ int main() {
 	IFG2 &= ~UCA0RXIFG;
 	IE2 |= UCA0RXIE;
 
+	hwuart_init();
+
 	// Initialise the Clock / Timer
 	//TA0CTL = //
 	BCSCTL3 |= XCAP_3; // 12.5pF Load on XTAL
@@ -154,7 +163,7 @@ int main() {
 	digit_idx = 0;
 
 	rtc_initialise();
-	printtime();
+	//printtime();
 
 	i = 65530; while (i--) { __nop(); }
 
@@ -166,7 +175,14 @@ int main() {
 			// Toggle on received byte
 			P1OUT ^= BIT0;
 			hwuart_flags &= ~HWUART_HASRECEIVED;
-			if (hwuart_byte == 'p') {
+			if (*hwuart_getlinebuf() == 'p') {
+				printtime();
+			}
+			int8_t * lb = hwuart_getlinebuf();
+			if (strncmp((char *)lb, "TIME", 4) == 0) {
+				rtcctx.hours = Utility_aToInt((char *)lb + 4);
+				rtcctx.minutes = Utility_aToInt((char *)lb + 7);
+				rtcctx.seconds = Utility_aToInt((char *)lb + 10);
 				printtime();
 			}
 			//UCA0TXBUF = hwuart_byte;
