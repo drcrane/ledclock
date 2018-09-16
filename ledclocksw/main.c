@@ -44,6 +44,7 @@ void Timer1_A1(void) {
 	switch (TA1IV) {
 	// Mark Period
 	case TA_CCR1_MATCH:
+		if (1) {
 		switch (digit_idx) {
 		case 0:
 		{
@@ -89,6 +90,10 @@ void Timer1_A1(void) {
 		}
 		P3OUT = digits[digit_bitmap_idx];
 		P2OUT = p2val;
+		//
+		} else {
+			// INITIALISING...
+		}
 		break;
 	case TA_IFG:
 	default:
@@ -183,9 +188,14 @@ int main() {
 				rtcctx.hours = Utility_aToInt((char *)lb + 4);
 				rtcctx.minutes = Utility_aToInt((char *)lb + 7);
 				rtcctx.seconds = Utility_aToInt((char *)lb + 10);
-				printtime();
+				//printtime();
+				rtcctx.flags |= RTCFLAGS_TIMESET;
 			}
 			//UCA0TXBUF = hwuart_byte;
+		}
+		if (rtcctx.flags & RTCFLAGS_UPDATETIME) {
+			hwuart_sendstr("\rtime sync beverly.bengreen.eu\r");
+			rtcctx.flags &= ~RTCFLAGS_UPDATETIME;
 		}
 		//P3OUT = digits[rtcctx.seconds % 10];
 

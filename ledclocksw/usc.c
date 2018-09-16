@@ -30,9 +30,9 @@ void hwuart_sendstr(char * ptr) {
 
 int8_t * hwuart_getlinebuf() {
 	if (hwuart_linebuf == hwuart_linebuf_b) {
-		return hwuart_linebuf_a;
+		return (int8_t *)hwuart_linebuf_a;
 	}
-	return hwuart_linebuf_b;
+	return (int8_t *)hwuart_linebuf_b;
 }
 
 void USCI0RX_ISR(void) __attribute__((interrupt(USCIAB0RX_VECTOR)));
@@ -54,7 +54,7 @@ void USCI0RX_ISR(void) {
 					__bic_SR_register_on_exit(CPUOFF);
 				}
 			} else {
-				UCA0TXBUF = hwuart_byte;
+				//UCA0TXBUF = hwuart_byte;
 				hwuart_linebuf[hwuart_pos] = hwuart_byte;
 				hwuart_pos ++;
 			}

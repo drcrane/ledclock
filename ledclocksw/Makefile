@@ -18,12 +18,13 @@ SOURCES = main.c utilityfn.c timerfn.c usc.c rtc.c
 # Include are located in the Include directory
 INCLUDES = -Iinclude
 # location of linker scripts for MSP430 target (check that $(MCU).ld exists here)
-LDFILES  = -L/opt/msp430-elf-6.4.0/msp430-elf/lib/430 -L/opt/msp430-elf-6.4.0/lib/gcc/msp430-elf/6.4.0/430
+#LDFILES  = -L/opt/msp430-elf-6.4.0/msp430-elf/lib/430 -L/opt/msp430-elf-6.4.0/lib/gcc/msp430-elf/6.4.0/430
+LDFILES  = -L/mnt/sda3/opt/msp430-elf-7.0.1/lib/gcc/msp430-elf/7.0.1/430 -L/mnt/sda3/opt/msp430-elf-7.0.1/msp430-elf/lib/430
 # Add or subtract whatever MSPGCC flags you want. There are plenty more
 ########################################################################################
 CFLAGS   = -D__LINUX_MSP430_GCC__ -mmcu=$(MCU) -g -Os -Wall -Wunused $(INCLUDES) -fstack-usage
 ASFLAGS  = -mmcu=$(MCU) -x assembler-with-cpp -Wa,-gstabs
-LDFLAGS  = $(LDFILES) -lgcc -T $(MCU).ld -Map=$(TARGET).map
+LDFLAGS  = $(LDFILES) -lc -lgcc -T $(MCU).ld -Map=$(TARGET).map
 ########################################################################################
 ARCHPRFX = msp430-elf-
 CC       = $(ARCHPRFX)gcc
