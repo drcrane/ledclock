@@ -180,10 +180,10 @@ int main() {
 			// Toggle on received byte
 			P1OUT ^= BIT0;
 			hwuart_flags &= ~HWUART_HASRECEIVED;
-			if (*hwuart_getlinebuf() == 'p') {
-				printtime();
-			}
 			int8_t * lb = hwuart_getlinebuf();
+			if (*lb == 'p') {
+				printtime();
+			} else
 			if (strncmp((char *)lb, "TIME", 4) == 0) {
 				rtcctx.hours = Utility_aToInt((char *)lb + 4);
 				rtcctx.minutes = Utility_aToInt((char *)lb + 7);

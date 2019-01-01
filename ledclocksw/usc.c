@@ -4,7 +4,7 @@
 
 #include "usc.h"
 
-volatile int16_t hwuart_byte;
+//volatile int16_t hwuart_byte;
 volatile int16_t hwuart_flags;
 volatile int16_t hwuart_pos;
 volatile int8_t * hwuart_linebuf;
@@ -39,6 +39,7 @@ void USCI0RX_ISR(void) __attribute__((interrupt(USCIAB0RX_VECTOR)));
 void USCI0RX_ISR(void) {
 	if (IFG2 & UCA0RXIFG) {
 		// Kick off the CPU on a CR (\r) or (\n)
+		int hwuart_byte;
 		hwuart_byte = UCA0RXBUF;
 		if (hwuart_pos <= 27) {
 			if (hwuart_byte == '\r' || hwuart_byte == '\n') {

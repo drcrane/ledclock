@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 
-#define HWUART_HASRECEIVED 0x1
+#define HWUART_HASRECEIVED (0x1)
 
-extern volatile int16_t hwuart_byte;
+//extern volatile int16_t hwuart_byte;
 extern volatile int16_t hwuart_flags;
 extern volatile int16_t hwuart_pos;
 extern volatile int8_t hwuart_linebuf_a[];
