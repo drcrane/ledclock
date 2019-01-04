@@ -28,6 +28,20 @@ ssize_t perform_read(int fd, circularbuffer_t * cb) {
 	}
 	readed = read(fd, cb_gethead(cb), to_read);
 	if (readed > 0) {
+		char * head;
+		int c, pc;
+		size_t i;
+		head = cb_gethead(cb);
+		fprintf(stdout, "%d: ", (int)readed);
+		for (i = 0; i < readed; i++) {
+			c = head[i] & 0xff;
+			pc = '.';
+			if (c >= 0x20 && c <= 0x7e) {
+				pc = c;
+			}
+			fprintf(stdout, "%02x(%c) ", c, pc);
+		}
+		fprintf(stdout, "\n");
 		cb_addbytes(cb, readed);
 	}
 	return readed;
@@ -86,17 +100,23 @@ next_activity:
 
 	if (FD_ISSET(uart_ctx->fd, &fd_read)) {
 		perform_read(uart_ctx->fd, rd_cb);
+check_next_line:
 		res = cb_readuntilbyte(rd_cb, buf, 1024, '\r', &rd_idx);
 		if (res == -2) {
 			fprintf(stdout, "terminating char not found\r\n");
-		}
+		} else
 		if (res == 0) {
 			buf[rd_idx] = '\0';
 			fprintf(stdout, "[%s]\r\n", buf);
 			rd_idx = 0;
 			if (strncmp(buf, "time sync", 9) == 0) {
-				cb_write(wr_cb, "TIME00:00:00\r", 13);
+				char * str = "\% time sync beverly.bengreen.eu\r\n\% et 1546630368\r1546630368: 1521939600 1540688400\r\nN\r\n\r\n\r\nTIME12:59:00\r\n";
+				int len = strlen(str);
+				cb_write(wr_cb, str, len);
+				//cb_write(wr_cb, "\% time sync beverly.bengreen.eu\r\% et 1546630368\r1546630368: 1521939600 1540688400\rN\r\r\rTIME12:45:00\r", 13);
+				fprintf(stdout, "Sent Time\n");
 			}
+			goto check_next_line;
 		}
 	}
 	if (FD_ISSET(uart_ctx->fd, &fd_write)) {
