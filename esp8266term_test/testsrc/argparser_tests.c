@@ -21,12 +21,33 @@ const char * argparser_basic_test() {
 	mu_assert(arg_count == 2, "incorrect argument count");
 	mu_assert(strcmp(args[0], "ls") == 0, "arg 0 incorrect");
 	mu_assert(strcmp(args[1], "-1") == 0, "arg 1 incorrect");
+	free(line);
+	return NULL;
+}
+
+const char * argparser_quoted_arg_count_test() {
+	char * line = strdup("ls -1 \"file name\"\r\n");
+	size_t line_len = strlen(line);
+	line_len = argparser_check_for_eol(line, line + line_len);
+	int arg_count;
+	char * args[ARGPARSER_MAXARGS];
+	arg_count = argparser_parse(args, line);
+	mu_assert(arg_count == 3, "incorrect argument count");
+	free(line);
+
+	line = strdup("ls -1 \"file name\" \"another filename\" \r\n");
+	line_len = strlen(line);
+	argparser_check_for_eol(line, line + line_len);
+	arg_count = argparser_parse(args, line);
+	mu_assert(arg_count == 4, "incorrect argument count");
+	free(line);
 	return NULL;
 }
 
 const char * all_tests() {
 	mu_suite_start();
 	mu_run_test(argparser_basic_test);
+	mu_run_test(argparser_quoted_arg_count_test);
 	return NULL;
 }
 

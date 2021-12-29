@@ -1,6 +1,8 @@
 #!/bin/busybox ash
 echo "Running unit tests:"
 
+echo "X" > testsrc/tests.log
+
 VALGRIND=valgrind
 
 for i in testsrc/*_tests

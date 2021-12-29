@@ -33,8 +33,14 @@ int argparser_parse(char * argv[], char * input) {
 			}
 			*temp = 0;
 			// skip the space after the " ;-)
-			rover = temp + 2;
+			rover = temp + 1;
 			continue;
+		} else
+		if (*rover == ' ') {
+			rover++;
+		} else
+		if (*rover == '\0') {
+			break;
 		} else {
 			temp = strchr(rover, ' ');
 			argv[argc++] = rover;
