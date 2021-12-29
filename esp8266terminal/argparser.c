@@ -3,12 +3,23 @@
 #include <string.h>
 #include <stddef.h>
 
-#define MAX_ARGS 10
+size_t argparser_check_for_eol(char * line, char * end) {
+	char * pos = line;
+	while (pos != end) {
+		int c = *pos;
+		if (c == '\n' || c == '\r') {
+			*pos = '\0';
+			return (size_t)(pos - line);
+		}
+		pos ++;
+	}
+	return 0;
+}
 
 int argparser_parse(char * argv[], char * input) {
 	int argc = 0;
-	char *temp;
-	char *rover;
+	char * temp;
+	char * rover;
 
 	rover = input;
 	do {
@@ -34,7 +45,7 @@ int argparser_parse(char * argv[], char * input) {
 			*temp = '\0';
 			rover = temp + 1;
 		}
-	} while (argc < MAX_ARGS);
+	} while (argc < ARGPARSER_MAXARGS);
 	return argc;
 }
 
