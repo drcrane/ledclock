@@ -23,7 +23,8 @@
 #include "ntp.h"
 #include "argparser.h"
 
-#define MAX_ARGC (10)
+// use ARGPARSER_MAXARGS
+// #define MAX_ARGC (10)
 
 char wifi_ssid[50];
 char wifi_passwd[50];
@@ -151,7 +152,7 @@ static void cmd_time(uint32_t argc, char *argv[]) {
 
 static void handle_command(char *cmd)
 {
-    char *argv[MAX_ARGC];
+    char *argv[ARGPARSER_MAXARGS];
     int argc;
     //char *temp, *rover;
     memset((void*) argv, 0, sizeof(argv));
@@ -159,7 +160,7 @@ static void handle_command(char *cmd)
     //rover = cmd;
     // Split string "<command> <argument 1> <argument 2>  ...  <argument N>"
     // into argv, argc style
-    //while(argc < MAX_ARGC && (temp = strstr(rover, " "))) {
+    //while(argc < ARGPARSER_MAXARGS && (temp = strstr(rover, " "))) {
     //    rover = &(temp[1]);
     //    argv[argc++] = rover;
     //    *temp = 0;

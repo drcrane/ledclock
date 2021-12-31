@@ -1,10 +1,10 @@
 LEDCLOCK
 ========
 
-This repository contains the source files for my seven segment LED 
+This repository contains the source files for my seven segment LED
 Clock which I made in 2017 for my nephew.
 
-The Clock is powered by an MSP430G2553 and a 32.768 kHz watch 
+The Clock is powered by an MSP430G2553 and a 32.768 kHz watch
 crystal. The clock queried time over the serial port which should
 be connected to an ESP8266 (ESP-01) running a modified terminal
 programme that supports querying internet time servers.
@@ -18,8 +18,19 @@ Turn on a time server in Alpine Linux / busybox (if compiled in)
 
 This is good for testing as you can see each request for the time.
 
+ESP8266\_RTOS\_SDK
+------------------
+
+`esp8266terminal2` uses the espressif SDK, please see readme file
+in `esp8266terminal2`.
+
+ - Benjamin Green 2021-12-31
+
 Open-RTOS-SDK
 -------------
+
+`esp8266terminal` is no longer used for this project and will be
+removed soon. Please use `esp8266terminal2`.
 
 The terminal application was modified (not very well) to support
 this application. The REPOs:
