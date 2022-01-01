@@ -110,18 +110,27 @@ static int wifi_softap_start() {
 	return 0;
 }
 
-struct netconn * tcp_client_handle;
-//char rambuf[512];
+static struct netconn * tcp_client_handle;
+static int tcp_client_data_waiting;
 
 static void tcp_server_callback(struct netconn * conn, enum netconn_evt evt, uint16_t length) {
 	ESP_LOGI(TAG, "tcp_cb: %d %u", evt, length);
 	if (evt == NETCONN_EVT_RCVPLUS) {
-		struct netbuf * netbuf;
-		void * ptr;
-		uint16_t datalen;
-		err_t err;
+		//struct netbuf * netbuf;
+		//void * ptr;
+		//uint16_t datalen;
+		//err_t err;
 		if (conn == tcp_server_handle) {
 			ESP_LOGI(TAG, "tcp_server_handle");
+		} else
+		if (conn == tcp_client_handle) {
+			//if (length > 0) {
+				ESP_LOGI(TAG, "new client data");
+				tcp_client_data_waiting ++;
+			//}
+		} else {
+			ESP_LOGI(TAG, "unknown client data");
+			tcp_client_data_waiting ++;
 		}
 		// Don't think can call in callback.
 		//err = netconn_accept(conn, &tcp_client_handle);
@@ -153,19 +162,70 @@ static void system_monitor_callback(TimerHandle_t xTimer) {
 	}
 	if (rc == WIFI_STA_CONNECTED) {
 		err_t err;
+		struct netbuf * netbuf;
+		void * ptr;
+		uint16_t datalen;
 		if (tcp_server_handle == NULL) {
-		// begin listening
-		// esp_err_t tcpip_adapter_get_ip_info(tcpip_adapter_if_t tcpip_if, tcpip_adapter_ip_info_t *ip_info);
-		//ip_addr_t ip_any = IP_ADDR_ANY;
-		tcp_server_handle = netconn_new_with_callback(NETCONN_TCP, tcp_server_callback);
-		ESP_LOGI(TAG, "%d", tcp_server_handle == NULL ? 0 : 1);
-		netconn_set_flags(tcp_server_handle, NETCONN_FLAG_NON_BLOCKING);
-		// Don't need to use htons here... for some reason.
-		err = netconn_bind(tcp_server_handle, IP_ADDR_ANY, 5000);
-		ESP_LOGI(TAG, "bind err %d", err);
-		err = netconn_listen_with_backlog(tcp_server_handle, 2);
-		ESP_LOGI(TAG, "listen err %d", err);
-		tcp_client_handle = NULL;
+			// begin listening
+			// esp_err_t tcpip_adapter_get_ip_info(tcpip_adapter_if_t tcpip_if, tcpip_adapter_ip_info_t *ip_info);
+			//ip_addr_t ip_any = IP_ADDR_ANY;
+			tcp_server_handle = netconn_new_with_callback(NETCONN_TCP, tcp_server_callback);
+			ESP_LOGI(TAG, "%d", tcp_server_handle == NULL ? 0 : 1);
+			netconn_set_flags(tcp_server_handle, NETCONN_FLAG_NON_BLOCKING);
+			// Don't need to use htons here... for some reason.
+			err = netconn_bind(tcp_server_handle, IP_ADDR_ANY, 5000);
+			ESP_LOGI(TAG, "bind err %d", err);
+			err = netconn_listen_with_backlog(tcp_server_handle, 2);
+			ESP_LOGI(TAG, "listen err %d", err);
+			tcp_client_handle = NULL;
+		}
+		if (tcp_server_handle != NULL) {
+			struct netconn * client_conn;
+			err = netconn_accept(tcp_server_handle, &client_conn);
+			if (err == ERR_WOULDBLOCK) {
+				ESP_LOGI(TAG, "would block here");
+			} else
+			if (err == ERR_OK) {
+				tcp_client_data_waiting = 0;
+				tcp_client_handle = client_conn;
+				ESP_LOGI(TAG, "accepted connection");
+			} else {
+				ESP_LOGI(TAG, "netconn_accept err = %d", err);
+				if (tcp_client_handle) {
+					netconn_delete(tcp_client_handle);
+					tcp_client_handle = NULL;
+				}
+			}
+		}
+		if (tcp_client_handle) {
+			ESP_LOGI(TAG, "accept complete");
+			if (tcp_client_data_waiting) {
+				ESP_LOGI(TAG, "data waiting");
+				if ((err = netconn_recv(tcp_client_handle, &netbuf)) == ERR_OK) {
+					do {
+						netbuf_data(netbuf, (void **)&ptr, &datalen);
+						ESP_LOGI(TAG, "got data %d", (int)datalen);
+					} while (netbuf_next(netbuf) >= 0);
+					netbuf_delete(netbuf);
+				//	tcp_client_data_waiting = 0;
+				//} else
+				//if (err == ERR_WOULDBLOCK) {
+				//	ESP_LOGI(TAG, "still connected");
+				//} else {
+				//	ESP_LOGI(TAG, "connection closed");
+				//	netconn_close(tcp_client_handle);
+					//	netconn_delete(tcp_client_handle);
+				//	tcp_client_handle = NULL;
+				//	tcp_client_data_waiting --;
+				} else {
+					ESP_LOGI(TAG, "recv err = %d", err);
+					netconn_close(tcp_client_handle);
+					netconn_delete(tcp_client_handle);
+					tcp_client_handle = NULL;
+					//tcp_client_data_waiting = 0;
+				}
+				tcp_client_data_waiting --;
+			}
 		}
 	}
 	/*
