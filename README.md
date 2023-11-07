@@ -51,3 +51,12 @@ an ESP8266.
 
  - Benjamin Green 2018-02-03
 
+Web Interface Time Setting
+--------------------------
+
+To set the time for a clock that currently has an IP address of `192.168.0.128`
+
+    curl -v -d time_to_set=23:50:00 http://192.168.0.128/wifi
+
+A browser may also be used by accessing the page at: `http://192.168.0.128/wifi`.
+
