@@ -1,4 +1,5 @@
-/* Terminal Interface to ESP8266
+/*
+   Terminal Interface to ESP8266
 
    This example code is in the Public Domain (or CC0 licensed, at your option.)
 
@@ -27,6 +28,7 @@ static const char * TAG = "terminal";
 
 static TimerHandle_t system_monitor_timer;
 
+typedef nvs_handle nvs_handle_t;
 static nvs_handle_t nvs_config_handle;
 
 static EventGroupHandle_t wifi_event_group;
@@ -58,7 +60,9 @@ static void wifi_event_handler(void * arg, esp_event_base_t event_base, int32_t 
 
 #define WIFI_STA_CONNECTING 1
 #define WIFI_STA_CONNECTED 2
-#define WIFI_STA_ERROR 3
+#define WIFI_STA_ERROR 4
+
+#define WIFI_AP_ERROR 8
 
 static int wifi_sta_join() {
 	esp_err_t rc = ESP_OK;
@@ -76,20 +80,20 @@ static int wifi_sta_join() {
 		// Is there an ssid set?
 		wifi_config_t wifi_config = { 0 };
 		size_t len = sizeof(wifi_config.sta.ssid);
-		rc = nvs_get_str(nvs_config_handle, "sta.ssid", (char *)wifi_config.sta.ssid, &len);
+		rc = nvs_get_str(nvs_config_handle, "sta.ssid", (char *)(wifi_config.sta.ssid), &len);
 		if (rc != ESP_OK) {
-			ESP_LOGI(TAG, "ssid read error");
+			ESP_LOGI(TAG, "sta ssid read error");
 			return WIFI_STA_ERROR;
 		}
 		len = sizeof(wifi_config.sta.password);
 		rc = nvs_get_str(nvs_config_handle, "sta.pwd", (char *)wifi_config.sta.password, &len);
 		if (rc != ESP_OK) {
-			ESP_LOGI(TAG, "pwd read error");
+			ESP_LOGI(TAG, "sta pwd read error");
 			return WIFI_STA_ERROR;
 		}
 		rc = esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
 		if (rc != ESP_OK) {
-			ESP_LOGI(TAG, "set config error %d", rc);
+			ESP_LOGI(TAG, "sta set config error %d", rc);
 			return WIFI_STA_ERROR;
 		}
 	}
@@ -106,6 +110,16 @@ static int wifi_sta_join() {
 }
 
 static int wifi_softap_start() {
+	esp_err_t rc = ESP_OK;
+	{
+	wifi_config_t wifi_config = { 0 };
+	size_t len = sizeof(wifi_config.ap.ssid);
+	rc = nvs_get_str(nvs_config_handle, "ap.ssid", (char *)(wifi_config.sta.ssid), &len);
+	if (rc != ESP_OK) {
+		ESP_LOGI(TAG, "ap ssid read error");
+		return WIFI_AP_ERROR;
+	}
+	}
 	//
 	return 0;
 }
@@ -253,19 +267,20 @@ static void command_process(int argc, char *argv[]) {
 			//	uart_write_bytes(UART_NUM_0, "\r\n", 2);
 			//}
 		//} else
-		//if (strcmp(argv[1], "join") == 0) {
+		if (strcmp(argv[1], "join") == 0) {
+			wifi_sta_join();
 			//int timeout_ms = 10000;
 			//wifi_mode_t wifi_mode = WIFI_MODE_NULL;
-			//if (esp_wifi_get_mode(&wifi_mode) == ESP_OK && wifi_mode != WIFI_MODE_STA) {
+			//if (esp_wifi_get_mode(&wifi_mode) == ESP_OK && wifi_mode != WIFI_MODE_STA && wifi_mode != WIFI_MODE_APSTA) {
 			//	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 			//} else {
 			//}
 			//if (argc == 4) {
-				//strncpy((char *)wifi_config.sta.ssid, argv[2], sizeof(wifi_config.sta.ssid));
-				//strncpy((char *)wifi_config.sta.password, argv[3], sizeof(wifi_config.sta.password));
-			//	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+			//	//strncpy((char *)wifi_config.sta.ssid, argv[2], sizeof(wifi_config.sta.ssid));
+			//	//strncpy((char *)wifi_config.sta.password, argv[3], sizeof(wifi_config.sta.password));
+			//	//ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
 			//}
-			//if (wifi_mode == WIFI_MODE_STA) {
+			//if (wifi_mode == WIFI_MODE_STA || wifi_mode == WIFI_MODE_APSTA) {
 			//	ESP_ERROR_CHECK(esp_wifi_connect());
 			//} else {
 			//}
@@ -276,7 +291,7 @@ static void command_process(int argc, char *argv[]) {
 			//} else {
 			//	uart_write_bytes(UART_NUM_0, "TOC\r\n", 5);
 			//}
-		//} else
+		} else
 		if (strcmp(argv[1], "status") == 0) {
 			int bits = xEventGroupGetBits(wifi_event_group);
 			if (bits & CONNECTED_BIT) {
@@ -313,10 +328,36 @@ static void command_process(int argc, char *argv[]) {
 				}
 			} else
 			if (strcmp(argv[1], "apcred") == 0) {
+				err = nvs_set_str(nvs_config_handle, "ap.ssid", argv[2]);
+				if (err == ESP_OK) {
+					err = nvs_set_str(nvs_config_handle, "ap.pwd", argv[3]);
+				}
+				if (err == ESP_OK) {
+					uart_write_bytes(UART_NUM_0, "OK_\r\n", 5);
+				} else {
+					uart_write_bytes(UART_NUM_0, "ERR\r\n", 5);
+				}
 			}
 		}
 	} else
 	if (strcmp(argv[0], "get") == 0) {
+		if (argc == 1) {
+			size_t len = 32;
+			char buf[32];
+			uart_write_bytes(UART_NUM_0, "STA\r\n", 5);
+			err = nvs_get_str(nvs_config_handle, "sta.ssid", buf, &len);
+			if (err == ESP_OK) {
+				uart_write_bytes(UART_NUM_0, buf, len);
+				uart_write_bytes(UART_NUM_0, "\r\n", 2);
+			}
+			len = 32;
+			err = nvs_get_str(nvs_config_handle, "sta.pwd", buf, &len);
+			if (err == ESP_OK) {
+				uart_write_bytes(UART_NUM_0, buf, len);
+				uart_write_bytes(UART_NUM_0, "\r\n", 2);
+			}
+			uart_write_bytes(UART_NUM_0, "AP_\r\n", 5);
+		}
 		if (argc == 2) {
 			if (strcmp(argv[1], "stacred") == 0) {
 				size_t len = 29;

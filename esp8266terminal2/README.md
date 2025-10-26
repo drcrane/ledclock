@@ -43,3 +43,31 @@ Now attempt to compile the code:
 
 This will likely fail since python modules are required
 
+Additional Notes
+----------------
+
+`partitions.csv` is a copy of `partitions_singleapp.csv` from the SDK.
+
+Communication using `picocom`
+-----------------------------
+
+`picocom` is a useful mini utility that allows serial communication,
+it is like minicom but more modern. However, it does not seem to
+compile properly on Alpine / musl when one wishes to use custom baud
+rates. Custom rates are important for being able to view the early
+output sent from an ESP8266 (ESP-01), the device used in my project.
+
+The `setserial` application does work with musl and so to interact
+with the device on `/dev/ttyUSB0` at 74880 bps:
+
+    ./setserial /dev/ttyUSB0 74880
+    doas ./picocom --noinit --noreset --omap crcrlf /dev/ttyUSB0
+
+`picocom` will probably report that the baud rate is 9600, this can
+be safely ignored, the `--noinit` switch will prevent changes to
+the rate when the application starts. **IMPORTANT** this also
+assumes that the other settings are normal, such as: 8-N-1. That is
+to say: 8 data bits, no parity bit and 1 stop bit.
+
+For more detail and to set other options, see the `stty` command.
+
